@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional
-from labelme.RektNet.cross_ratio_loss import CrossRatioLoss
-from labelme.RektNet.resnet import ResNet,ResNet_C_Block,ResNet_D_Block
+from labelme.cross_ratio_loss import CrossRatioLoss
+from labelme.resnet import ResNet,ResNet_C_Block,ResNet_D_Block
 
 
 #-------------------------------ResNet.......................

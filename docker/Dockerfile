@@ -27,3 +27,4 @@ ENV LANG en-US
 
 WORKDIR /root/workdir
 ENTRYPOINT [ "labelme" ]
+

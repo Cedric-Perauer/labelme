@@ -13,8 +13,10 @@ import sys
 import os
 import sys
 import shutil
-from RektNet.utils import prep_image
-from RektNet.keypoint_net import KeypointNet
+
+ddsafsddsfdsfsdf
+from labelme.utils import prep_image
+from labelme.keypoint_net import KeypointNet
 
 import imgviz
 from qtpy import QtCore
@@ -59,7 +61,7 @@ EXTENSIONS = ['.%s' % fmt.data().decode("ascii").lower()
 img_dir = "/home/cedric/CATKIN_FS/src/02_perception/camera/dl_yolo/training/RektNet/dataset/unlabeled/"
 
 model = KeypointNet()
-model.load_state_dict(torch.load(model_filepath).get('model'))
+model.load_state_dict(torch.load(model_filepath,map_location='cpu').get('model'))
 class MainWindow(QtWidgets.QMainWindow):
 
     FIT_WINDOW, FIT_WIDTH, MANUAL_ZOOM = 0, 1, 2
