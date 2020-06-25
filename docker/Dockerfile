@@ -15,9 +15,11 @@ RUN \
 
 RUN python3 -m pip install torch torchvision
 
+RUN python3 -m pip install opencv-python
+
 RUN python3 -m pip install -U pip setuptools wheel
 
-RUN python3 -m pip install -v git+https://github.com/Cedric-Perauer/labelme.git
+RUN python3 -m pip install -v git+https://github.com/wkentaro/labelme.git
 
 RUN mkdir /root/workdir
 
