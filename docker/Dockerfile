@@ -1,5 +1,5 @@
 FROM ubuntu:bionic
-LABEL maintainer "Kentaro Wada <www.kentaro.wada@gmail.com>"
+LABEL maintainer "Cedric Perauer <www.ceddyperauer@gmail.com>"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -19,7 +19,7 @@ RUN python3 -m pip install opencv-python
 
 RUN python3 -m pip install -U pip setuptools wheel
 
-RUN python3 -m pip install -v git+https://github.com/wkentaro/labelme.git
+RUN python3 -m pip install -v git+https://github.com/Cedric-Perauer/labelme.git
 
 RUN mkdir /root/workdir
 
