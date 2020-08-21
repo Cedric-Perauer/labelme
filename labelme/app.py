@@ -5,7 +5,7 @@ import os
 import os.path as osp
 import re
 import webbrowser
-import cv2 
+import cv2
 import torch
 import numpy as np
 import argparse
@@ -13,10 +13,8 @@ import sys
 import os
 import sys
 import shutil
-
-ddsafsddsfdsfsdf
-from labelme.utils import prep_image
-from labelme.keypoint_net import KeypointNet
+from RektNet.utils import prep_image
+from RektNet.keypoint_net import KeypointNet
 
 import imgviz
 from qtpy import QtCore
@@ -41,7 +39,7 @@ from labelme.widgets import LabelListWidgetItem
 from labelme.widgets import ToolBar
 from labelme.widgets import UniqueLabelQListWidget
 from labelme.widgets import ZoomWidget
-
+import pathlib
 
 
 # FIXME
@@ -51,15 +49,15 @@ from labelme.widgets import ZoomWidget
 # - [high] Add polygon movement with arrow keys
 # - [high] Deselect shape when clicking and already selected(?)
 # - [low,maybe] Preview images on file dialogs.
-# - Zoom is too "steppy". 
+# - Zoom is too "steppy".
 
-
-model_filepath = '/home/cedric/CATKIN_FS/src/10_utils/labelme/labelme/RektNet/loss_0.22.pt'
+pathlib.Path(__file__).parent.absolute()
+base_dir = str(pathlib.Path(__file__).parent.absolute()) 
+model_filepath = base_dir + '/loss_0.22.pt'
 LABEL_COLORMAP = imgviz.label_colormap(value=200)
 EXTENSIONS = ['.%s' % fmt.data().decode("ascii").lower()
               for fmt in QtGui.QImageReader.supportedImageFormats()]
-img_dir = "/home/cedric/CATKIN_FS/src/02_perception/camera/dl_yolo/training/RektNet/dataset/unlabeled/"
-
+img_dir = os.path.expanduser('~/CATKIN_FS/src/02_perception/camera/dl_yolo/training/RektNet/dataset/unlabeled/')
 model = KeypointNet()
 model.load_state_dict(torch.load(model_filepath,map_location='cpu').get('model'))
 class MainWindow(QtWidgets.QMainWindow):
@@ -85,20 +83,21 @@ class MainWindow(QtWidgets.QMainWindow):
         if config is None:
             config = get_config()
         self._config = config
-
+        
         super(MainWindow, self).__init__()
         self.setWindowTitle(__appname__)
         self.model = model
         self.device = 'cpu'
+        self.pic_count = 0 #counts number of labeled pictures 
         print(self.model)
-        ##Neural Network Setup 
-        self.image_size = 80 
+        ##Neural Network Setup
+        self.image_size = 80
         # Whether we need to save or not.
         self.dirty = False
-        #create list of json files in directory 
+        #create list of json files in directory
         self.json_list = []
-        for f in os.listdir(img_dir): 
-            if f.endswith(".json"): 
+        for f in os.listdir(img_dir):
+            if f.endswith(".json"):
                 self.json_list.append(f[:-5])
 
         self._noSelectionSlot = False
@@ -222,7 +221,7 @@ class MainWindow(QtWidgets.QMainWindow):
                        'open',
                        self.tr('Open image or label sdfdsfa'))
 
-        
+
         imagePredict = action(self.tr('&Image Predict'),
                        self.imagePredict,
                        icon='pred',
@@ -236,7 +235,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         opendir = action(self.tr('&Open Dir'), self.openDirDialog,
                          shortcuts['open_dir'], 'open', self.tr(u'Open Dir'))
-                         
+
         openNextImg = action(
             self.tr('&Next Image'),
             self.openNextImg,
@@ -495,7 +494,7 @@ class MainWindow(QtWidgets.QMainWindow):
             zoom=zoom, zoomIn=zoomIn, zoomOut=zoomOut, zoomOrg=zoomOrg,
             fitWindow=fitWindow, fitWidth=fitWidth,
             zoomActions=zoomActions,
-            openNextImg=openNextImg, openPrevImg=openPrevImg, 
+            openNextImg=openNextImg, openPrevImg=openPrevImg,
             imagePredict=imagePredict,
             cudaEnable=cudaEnable,
             fileMenuActions=(open_, opendir, save, saveAs, close, quit),
@@ -1245,11 +1244,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def addZoom(self, increment=1.1):
         self.setZoom(self.zoomWidget.value() * increment)
 
-    def cudaEnable(self): 
-        if self.device == 'cpu' and torch.cuda.is_available(): 
+    def cudaEnable(self):
+        if self.device == 'cpu' and torch.cuda.is_available():
             self.device = 'cuda'
             print("Now using the GPU as device instead of CPU")
-        else : 
+        else :
             self.device = 'cpu'
             print("Using CPU as device instead of GPU")
 
@@ -1408,7 +1407,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def adjustScale(self, initial=False):
         value = self.scalers[self.FIT_WINDOW if initial else self.zoomMode]()
-        value = int(100 * value)
+        value = int(500 * value)
+        #print(self.filename[-4:])
+        if self.filename[-4:] == "json" : 
+            img = cv2.imread(self.filename[:-4] +"jpg")
+        else :         
+            img = cv2.imread(self.filename[:-3]+"jpg")
+        #print(self.filename[:-4]+"jpg")
+        
+        #print(self.filename[:-3]+".jpg")
+        w,h, _ = img.shape
+        #print(self.image_size)
+        #print(h)
+        if h > 40 : 
+            value = value * (10/h)
         self.zoomWidget.setValue(value)
         self.zoom_values[self.filename] = (self.zoomMode, value)
 
@@ -1514,17 +1526,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self.loadFile(self.filename)
 
         self._config['keep_prev'] = keep_prev
-    
+
     def imagePredict(self):
         filename = self.filename
-        if self.filename : 
+        self.pic_count += 1
+        os.system("cls" if os.name =='nt' else 'clear') 
+        print("Number of Images : ",self.pic_count) 
+        if self.filename :
            img_name_arr = self.filename.split('/')
            img_name = img_name_arr[-1][:-4]
            self.imageData = LabelFile.load_image_file(self.filename)
-           
+
            #load if json does not exist
-           if not img_name in self.json_list: 
-                device = torch.device(self.device) 
+           if not img_name in self.json_list:
+                device = torch.device(self.device)
                 img = cv2.imread(self.filename)
                 w,h, _ = img.shape
                 img_size = (self.image_size,self.image_size)
@@ -1540,21 +1555,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 names = ['top','mid_L_top','mid_R_top','mid_L_bot','mid_R_bot','bot_L','bot_R']
 
                 #loop through neural net keypoint outputs
-                for i in range(len(out)) : 
+                for i in range(len(out)) :
                     label_dict = {'label':names[i]}
                     x = out[i][0] * h
                     y = out[i][1] * w
                     label_dict.update({'points':[[x.item(),y.item()]],'shape_type': 'point', 'flags': {}, 'group_id': None, 'other_data': {}})
                     shapes.append(label_dict)
-                    print(" X : {}, Y : {}".format(x,y))
+                    #print(" X : {}, Y : {}".format(x,y))
 
-                #load image and save as well as GUI stuff            
+                #load image and save as well as GUI stuff
                 imagePath = osp.relpath(
                 self.imagePath, osp.dirname(self.filename[:-4]+".json"))
                 imageData = self.imageData if self._config['store_data'] else None
                 lbf = LabelFile()
                 lbf.save(self.filename[:-4]+".json",shapes,imagePath,w,h,imageData)
-                
+
                 items = self.fileListWidget.findItems(
                 self.imagePath, Qt.MatchExactly
                 )
@@ -1564,7 +1579,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 items[0].setCheckState(Qt.Checked)
                 self.loadFile(self.filename[:-4]+".json")
 
-                #change self.filename back to image json 
+                #change self.filename back to image json
                 self.filename = filename
 
 
@@ -1752,7 +1767,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def toggleKeepPrevMode(self):
         self._config['keep_prev'] = not self._config['keep_prev']
- 
+
     def deleteSelectedShape(self):
         yes, no = QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No
         msg = self.tr(
